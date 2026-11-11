@@ -49,3 +49,19 @@ def calibration_curve(make, train, test, counts):
         else:
             out[n] = float((model.predict(recenter(Cte[half:], ref)) == yte[half:]).mean())
     return out
+
+
+def calibration_curve_subject(make, others, test, counts):
+    """The same question for a new person: the decoder is trained on eight other
+    people (each re-centred), and the new person's reference comes from their
+    first n unlabelled trials. Scored on the second half of their session."""
+    Cte, yte = test
+    half = len(yte) // 2
+    Ctr = np.concatenate([recenter(C) for C, _ in others]); ytr = np.concatenate([y for _, y in others])
+    model = make().fit(Ctr, ytr)
+    raw = make().fit(np.concatenate([C for C, _ in others]), ytr)
+    out = {0: float((raw.predict(Cte[half:]) == yte[half:]).mean())}
+    for n in counts:
+        if n > 0:
+            out[n] = float((model.predict(recenter(Cte[half:], reference(Cte[:n]))) == yte[half:]).mean())
+    return out
